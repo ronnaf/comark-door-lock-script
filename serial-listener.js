@@ -1,8 +1,15 @@
 const SerialPort = require('serialport');
 const Readline = require('@serialport/parser-readline');
-const port = new SerialPort('/dev/cu.usbmodem143201', {baudRate: 9600});
+
+// modify this according to the port where ur arduino is connected
+// Arduino IDE: Tools > Port > Serial ports
+const arduinoPort = '/dev/cu.usbmodem143201'
+
+const port = new SerialPort(arduinoPort, {baudRate: 9600});
 const parser = port.pipe(new Readline({delimiter: '\n'}));
 const fetch = require('node-fetch');
+
+const baseUrl = 'https://comark-door-lock-api.herokuapp.com'
 
 // Read the port data
 port.on("open", () => {
@@ -15,11 +22,11 @@ parser.on('data', async data => {
             const id = data.substr(4, data.length - 1)
             console.log('[LOG] id -', id)
 
-            const fetched = await fetch(`http://localhost:3030/rfids?rfid=${id}`);
+            const fetched = await fetch(`${baseUrl}/rfids?rfid=${id}`);
             const rfids = await fetched.json()
 
             if (rfids.data.length) {
-                await fetch("http://localhost:3030/logs", {
+                await fetch(`${baseUrl}/logs`, {
                     method: "POST",
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({
@@ -36,7 +43,7 @@ parser.on('data', async data => {
                     console.log('[LOG] Granted message written!');
                 });
             } else {
-                await fetch("http://localhost:3030/logs", {
+                await fetch(`${baseUrl}/logs`, {
                     method: "POST",
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({
